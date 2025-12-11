@@ -251,7 +251,7 @@ jobs:
           -H "Authorization: Bearer $DEST_TOKEN" \
           -H "Content-Type: application/json" \
           -d @workflow_config.json \
-          "$DEST_HOST/api/2.1/jobs/create")
+          "$DEST_HOST/api/2.1/jobs/create") 
         
         echo "Workflow creation response: $create_response"
         
