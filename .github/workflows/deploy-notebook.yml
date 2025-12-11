@@ -118,7 +118,7 @@ jobs:
         DEST_BASE="/py/scripts/main"
         CLUSTER_ID="${{ env.CLUSTER_ID }}"
         
-        echo "Creando workflow: WF_ADB con cluster existente ID: $CLUSTER_ID"
+        echo "Creando workflow: WF_LIBRARY_PAYROLL con cluster existente ID: $CLUSTER_ID"
         
         # Crear el JSON del workflow usando cluster existente
         cat > workflow_config.json << EOF
@@ -160,7 +160,7 @@ jobs:
               "max_retries": 2,
               "depends_on": [
                 {
-                  "task_key": "Ingest_employees" "Ingest_payroll"
+                  "task_key": "Ingest_employees,Ingest_payroll"
                 }
               ]
             },
