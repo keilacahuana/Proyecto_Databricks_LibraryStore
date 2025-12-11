@@ -1,4 +1,4 @@
-name: Dynamic Databricks Notebook Deploy
+name: Deploy ETL Northern Lights Book Co Library Chain
 
 on:
   push:
@@ -20,8 +20,8 @@ jobs:
       run: |
         ORIGIN_HOST=${{ secrets.DATABRICKS_ORIGIN_HOST }}
         ORIGIN_TOKEN=${{ secrets.DATABRICKS_ORIGIN_TOKEN }}
-        NOTEBOOK_BASE="/Workspace/Users/instructor_datasmartada@outlook.com/source"
-        NOTEBOOKS=("mount_adls_storage" "mount_adls_storage_v1" "Disparador")  # Agrega más según necesitesas
+        NOTEBOOK_BASE="/Workspace/Proyecto_Final_LibrarySales/ETL"
+        NOTEBOOKS=("Ingest employees data" "Ingest payroll data" "Load" "Transform")  # Agrega más según necesitesas
 
         mkdir -p notebooks_to_deploy
 
