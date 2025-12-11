@@ -180,6 +180,7 @@ jobs:
               "depends_on": [
                 { "task_key": "Preparacion_ambiente"
                   }
+              ]
             },
             {
               "task_key": "Transform",
