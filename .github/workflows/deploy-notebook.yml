@@ -159,9 +159,8 @@ jobs:
               "timeout_seconds": 3600,
               "max_retries": 2,
               "depends_on": [
-                {
-                  "task_key": "Ingest_employees,Ingest_payroll"
-                }
+                { "task_key": "Ingest_employees" },
+                { "task_key": "Ingest_payroll" }
               ]
             },
             {
