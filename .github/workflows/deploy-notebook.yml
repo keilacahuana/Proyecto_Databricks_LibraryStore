@@ -18,7 +18,7 @@ jobs:
         ORIGIN_HOST=${{ secrets.DATABRICKS_ORIGIN_HOST }}
         ORIGIN_TOKEN=${{ secrets.DATABRICKS_ORIGIN_TOKEN }}
         NOTEBOOK_BASE="/Workspace/Proyecto_Final_LibrarySales/ETL/"
-        NOTEBOOKS=("Ingest_employees_data" "Ingest_payroll_data" "Load" "Transform")  # Agrega más según necesitesas
+        NOTEBOOKS=("Preparacion_Ambiente" "Ingest_employees_data" "Ingest_payroll_data" "Load" "Transform")  # Agrega más según necesitesas
         mkdir -p notebooks_to_deploy
         for nb in "${NOTEBOOKS[@]}"; do
           echo "Exportando $nb en modo raw..."
@@ -127,33 +127,71 @@ jobs:
           "format": "MULTI_TASK",
           "tasks": [
             {
-              "task_key": "Ingest_employees",
-              "description": "Ejecuta notebook Ingest_employees_data",
+              "task_key": "Preparacion_ambiente",
+              "description": "Ejecuta notebook Preparacion_Ambiente con parámetros",
               "notebook_task": {
-                "notebook_path": "/ProyectoLibrary/scripts/main/Ingest_employees_data",
-                "source": "WORKSPACE"
+                "notebook_path": "/ProyectoLibrary/scripts/main/Preparacion_Ambiente",
+                "source": "WORKSPACE",
+                "base_parameters": {
+                  "storageName": "adlbsdb1011"
+                }
               },
               "existing_cluster_id": "$CLUSTER_ID",
               "timeout_seconds": 3600,
               "max_retries": 2
             },
             {
-              "task_key": "Ingest_payroll",
-              "description": "Ejecuta notebook payroll_data",
+              "task_key": "Ingest_employees",
+              "description": "Ejecuta notebook Ingest_employees con parámetros",
               "notebook_task": {
-                "notebook_path": "/ProyectoLibrary/scripts/main/Ingest_payroll_data",
-                "source": "WORKSPACE"
+                "notebook_path": "/ProyectoLibrary/scripts/main/Ingest_employees_data",
+                "source": "WORKSPACE",
+                "base_parameters": {
+                  "storage_name": "adlbsdb1011",
+                  "container": "raw",
+                  "catalogo": "catalog_Proy_fin_dev",
+                  "esquema": "bronze"
+                }
               },
               "existing_cluster_id": "$CLUSTER_ID",
               "timeout_seconds": 3600,
-              "max_retries": 2
+              "max_retries": 2,
+              "depends_on": [
+                { "task_key": "Preparacion_ambiente"
+                  } 
+              ]
+            },
+            {
+              "task_key": "Ingest_payroll",
+              "description": "Ejecuta notebook payroll_data on parámetros",
+              "notebook_task": {
+                "notebook_path": "/ProyectoLibrary/scripts/main/Ingest_payroll_data",
+                "source": "WORKSPACE",
+                "base_parameters": {
+                  "storage_name": "adlbsdb1011",
+                  "container": "raw",
+                  "catalogo": "catalog_Proy_fin_dev",
+                  "esquema": "bronze"
+                }
+              },
+              "existing_cluster_id": "$CLUSTER_ID",
+              "timeout_seconds": 3600,
+              "max_retries": 2,
+              "depends_on": [
+                { "task_key": "Preparacion_ambiente"
+                  }
             },
             {
               "task_key": "Transform",
               "description": "Carga tablas a Silver",
               "notebook_task": {
                 "notebook_path": "/ProyectoLibrary/scripts/main/Transform",
-                "source": "WORKSPACE"
+                "source": "WORKSPACE",
+                "base_parameters": {                  
+                  "catalogo": "catalog_Proy_fin_dev",
+                  "esquema_source": "bronze",
+                  "esquema_sink": "silver"
+                  }
               },
               "existing_cluster_id": "$CLUSTER_ID",
               "timeout_seconds": 3600,
@@ -168,7 +206,12 @@ jobs:
               "description": "Carga tablas a golden",
               "notebook_task": {
                 "notebook_path": "/ProyectoLibrary/scripts/main/Load",
-                "source": "WORKSPACE"
+                "source": "WORKSPACE",
+                "base_parameters": {
+                  "catalogo": "catalog_Proy_fin_dev",
+                  "esquema_source": "silver",
+                  "esquema_sink": "golden"
+              }
               },
               "existing_cluster_id": "$CLUSTER_ID",
               "timeout_seconds": 3600,
@@ -268,7 +311,127 @@ jobs:
           echo "❌ No se pudo encontrar el workflow creado"
           exit 1
         fi
+    - name: Execute Workflow WF_LIBRARY_PAYROLL
+      run: |
+        DEST_HOST=${{ secrets.DATABRICKS_DEST_HOST }}
+        DEST_TOKEN=${{ secrets.DATABRICKS_DEST_TOKEN }}
+        WORKFLOW_NAME="WF_LIBRARY_PAYROLL"
+        
+        echo "🚀 Ejecutando workflow: $WORKFLOW_NAME"
+        
+        # Obtener job_id del workflow
+        workflows_list=$(curl -s -X GET \
+          -H "Authorization: Bearer $DEST_TOKEN" \
+          "$DEST_HOST/api/2.1/jobs/list")
+        
+        job_id=$(echo "$workflows_list" | jq -r --arg name "$WORKFLOW_NAME" '.jobs[]? | select(.settings.name == $name) | .job_id')
+        
+        if [ "$job_id" != "" ] && [ "$job_id" != "null" ]; then
+          echo "✅ Workflow encontrado con ID: $job_id"
+          
+          # Ejecutar el workflow
+          run_response=$(curl -s -X POST \
+            -H "Authorization: Bearer $DEST_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"job_id\": $job_id}" \
+            "$DEST_HOST/api/2.1/jobs/run-now")
+          
+          run_id=$(echo "$run_response" | jq -r '.run_id')
+          
+          if [ "$run_id" != "" ] && [ "$run_id" != "null" ]; then
+            echo "🎯 Workflow ejecutado exitosamente!"
+            echo "Run ID: $run_id"
+            echo "WORKFLOW_RUN_ID=$run_id" >> $GITHUB_ENV
+            echo "WORKFLOW_JOB_ID=$job_id" >> $GITHUB_ENV
+            
+            # Mostrar URL del workflow en ejecución
+            echo "🔗 URL del workflow: $DEST_HOST/jobs/$job_id/runs/$run_id"
+            
+          else
+            echo "❌ Error al ejecutar el workflow"
+            echo "Response: $run_response"
+            exit 1
+          fi
+        else
+          echo "❌ No se pudo encontrar el workflow para ejecutar"
+          exit 1
+        fi
     
+    - name: Monitor Workflow Execution
+      run: |
+        DEST_HOST=${{ secrets.DATABRICKS_DEST_HOST }}
+        DEST_TOKEN=${{ secrets.DATABRICKS_DEST_TOKEN }}
+        RUN_ID="${{ env.WORKFLOW_RUN_ID }}"
+        JOB_ID="${{ env.WORKFLOW_JOB_ID }}"
+        
+        echo "📊 Monitoreando ejecución del workflow..."
+        echo "Job ID: $JOB_ID"
+        echo "Run ID: $RUN_ID"
+        
+        # Monitorear por máximo 10 minutos (600 segundos)
+        max_wait_time=600
+        wait_time=0
+        check_interval=30
+        
+        while [ $wait_time -lt $max_wait_time ]; do
+          # Obtener estado actual
+          run_status=$(curl -s -X GET \
+            -H "Authorization: Bearer $DEST_TOKEN" \
+            "$DEST_HOST/api/2.1/jobs/runs/get?run_id=$RUN_ID")
+          
+          state=$(echo "$run_status" | jq -r '.state.life_cycle_state')
+          result_state=$(echo "$run_status" | jq -r '.state.result_state // "RUNNING"')
+          
+          echo "⏱️  Estado actual: $state ($result_state) - Tiempo transcurrido: ${wait_time}s"
+          
+          # Mostrar progreso de las tareas
+          echo "$run_status" | jq -r '.tasks[]? | "  📋 " + .task_key + ": " + .state.life_cycle_state + " (" + (.state.result_state // "RUNNING") + ")"'
+          
+          case "$state" in
+            "TERMINATED")
+              if [ "$result_state" = "SUCCESS" ]; then
+                echo "🎉 ¡Workflow completado exitosamente!"
+                
+                # Mostrar resumen final
+                echo ""
+                echo "📈 Resumen de ejecución:"
+                echo "$run_status" | jq -r '.tasks[]? | "✅ " + .task_key + " → " + (.state.result_state // "SUCCESS")'
+                
+                # Obtener duración
+                start_time=$(echo "$run_status" | jq -r '.start_time')
+                end_time=$(echo "$run_status" | jq -r '.end_time')
+                if [ "$start_time" != "null" ] && [ "$end_time" != "null" ]; then
+                  duration=$((($end_time - $start_time) / 1000))
+                  echo "⏰ Duración total: ${duration} segundos"
+                fi
+                
+                exit 0
+              else
+                echo "❌ Workflow terminó con errores: $result_state"
+                echo "📋 Detalles de las tareas:"
+                echo "$run_status" | jq -r '.tasks[]? | "❌ " + .task_key + ": " + (.state.result_state // "UNKNOWN")'
+                exit 1
+              fi
+              ;;
+            "INTERNAL_ERROR"|"SKIPPED")
+              echo "❌ Workflow falló con estado: $state"
+              exit 1
+              ;;
+            *)
+              # Estados: PENDING, RUNNING, TERMINATING
+              echo "⏳ Workflow aún ejecutándose..."
+              ;;
+          esac
+          
+          sleep $check_interval
+          wait_time=$((wait_time + check_interval))
+        done
+        
+        echo "⚠️  Timeout: El workflow aún se está ejecutando después de $max_wait_time segundos"
+        echo "🔗 Verifica el estado en: $DEST_HOST/jobs/$JOB_ID/runs/$RUN_ID"
+        echo "ℹ️  El workflow seguirá ejecutándose en Databricks"
+        exit 0
+
     - name: Clean up
       run: |
         rm -rf notebooks_to_deploy
@@ -276,16 +439,17 @@ jobs:
     
     - name: Done
       run: |
-        echo "🎉 ¡Despliegue completado exitosamente!"
+        echo "🎉 Despliegue y ejecución completados exitosamente"
         echo ""
         echo "Resumen:"
         echo "Notebooks desplegados: Ingest_employees_data, Ingest_payroll_data, Load, Transform"
         echo "Workflow creado: WF_LIBRARY_PAYROLL"
         echo "Tareas configuradas:"
+        echo "   - Preparacion_ambiente (Preparacion_Ambiente)"
         echo "   - Ingest_employees (Ingest_employees_data)"
         echo "   - Ingest_payroll (Ingest_payroll_data)"
         echo "   - Transform (Transform)"
         echo "   - Load (Load)"
         echo "Cluster existente: DS_Cluster configurado"
         echo ""
-        echo "🔗 Accede a tu workspace de Databricks para ver el workflow en la sección 'Workflows'"
+        echo "🔗 Accede a tu workspace de Databricks para ver los resultados detallados"
