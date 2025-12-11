@@ -20,8 +20,8 @@ jobs:
       run: |
         ORIGIN_HOST=${{ secrets.DATABRICKS_ORIGIN_HOST }}
         ORIGIN_TOKEN=${{ secrets.DATABRICKS_ORIGIN_TOKEN }}
-        NOTEBOOK_BASE="/Workspace/Proyecto_Final_LibrarySales/ETL"
-        NOTEBOOKS=("Ingest employees data" "Ingest payroll data" "Load" "Transform")  # Agrega más según necesitesas
+        NOTEBOOK_BASE="/Workspace/Proyecto_Final_LibrarySales/ETL/"
+        NOTEBOOKS=("Ingest_employees_data" "Ingest_payroll_data" "Load" "Transform")  # Agrega más según necesitesas
 
         mkdir -p notebooks_to_deploy
 
