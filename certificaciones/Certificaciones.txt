@@ -1,0 +1,5 @@
+--Databricks fundamentals
+
+https://credentials.databricks.com/6f7988d8-6285-4179-8b4b-b015df1bf6f7#acc.EUujaMPc
+
+--AI Generative fundamentals
