@@ -3,3 +3,5 @@
 https://credentials.databricks.com/6f7988d8-6285-4179-8b4b-b015df1bf6f7#acc.EUujaMPc
 
 --AI Generative fundamentals
+https://customer-academy.databricks.com/learn/courses/4282/generative-ai-fundamentals-spanish?hash=f1d24b06ea436120bf5fbaeb0bcc5a80804fbdbf&generated_by=1328568
+
