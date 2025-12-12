@@ -1,0 +1,774 @@
+{
+  "datasets": [
+    {
+      "name": "0ca96e81",
+      "displayName": "route revenue",
+      "queryLines": [
+        "SELECT\n",
+        "  T.pickup_zip,\n",
+        "  T.dropoff_zip,\n",
+        "  T.route as `Route`,\n",
+        "  T.frequency as `Number Trips`,\n",
+        "  T.total_fare as `Total Revenue`\n",
+        "FROM\n",
+        "  (\n",
+        "    SELECT\n",
+        "      pickup_zip,\n",
+        "      dropoff_zip,\n",
+        "      concat(pickup_zip, '-', dropoff_zip) AS route,\n",
+        "      count(*) as frequency,\n",
+        "      SUM(fare_amount) as total_fare\n",
+        "    FROM\n",
+        "      `samples`.`nyctaxi`.`trips`\n",
+        "    GROUP BY\n",
+        "       1,2,3\n",
+        "  ) T\n",
+        "ORDER BY\n",
+        "  1 ASC"
+      ]
+    },
+    {
+      "name": "3f5450e6",
+      "displayName": "trips",
+      "queryLines": [
+        "SELECT\n",
+        "  T.tpep_pickup_datetime,\n",
+        "  T.tpep_dropoff_datetime,\n",
+        "  T.fare_amount,\n",
+        "  T.pickup_zip,\n",
+        "  T.dropoff_zip,\n",
+        "  T.trip_distance,\n",
+        "  T.weekday,\n",
+        "  CASE\n",
+        "    WHEN T.weekday = 1 THEN 'Sunday'\n",
+        "    WHEN T.weekday = 2 THEN 'Monday'\n",
+        "    WHEN T.weekday = 3 THEN 'Tuesday'\n",
+        "    WHEN T.weekday = 4 THEN 'Wednesday'\n",
+        "    WHEN T.weekday = 5 THEN 'Thursday'\n",
+        "    WHEN T.weekday = 6 THEN 'Friday'\n",
+        "    WHEN T.weekday = 7 THEN 'Saturday'\n",
+        "    ELSE 'N/A'\n",
+        "  END AS day_of_week\n",
+        "FROM\n",
+        "  (\n",
+        "    SELECT\n",
+        "      dayofweek(tpep_pickup_datetime) as weekday,\n",
+        "      *\n",
+        "    FROM\n",
+        "      `samples`.`nyctaxi`.`trips`\n",
+        "    WHERE\n",
+        "      trip_distance > 0\n",
+        "      AND trip_distance < 10\n",
+        "      AND fare_amount > 0\n",
+        "      AND fare_amount < 50\n",
+        "  ) T\n",
+        "ORDER BY\n",
+        "  T.weekday  "
+      ]
+    },
+    {
+      "name": "d5410a86",
+      "displayName": "golden_payroll",
+      "queryLines": [
+        "select * from catalog_proy_fin_dev.golden.golden_payroll_partitioned"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "5a35864d",
+      "displayName": "Summary",
+      "layout": [
+        {
+          "widget": {
+            "name": "2c147a61",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "d5410a86",
+                  "fields": [
+                    {
+                      "name": "conteo",
+                      "expression": "`conteo`"
+                    },
+                    {
+                      "name": "sum(max_tax_withheld)",
+                      "expression": "SUM(`max_tax_withheld`)"
+                    },
+                    {
+                      "name": "avg(min_benefits)",
+                      "expression": "AVG(`min_benefits`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "combo",
+              "encodings": {
+                "x": {
+                  "fieldName": "conteo",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "primary": {
+                    "fields": [
+                      {
+                        "fieldName": "sum(max_tax_withheld)"
+                      }
+                    ]
+                  },
+                  "secondary": {
+                    "fields": [
+                      {
+                        "fieldName": "avg(min_benefits)"
+                      }
+                    ]
+                  },
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Benefits/Taxes"
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "dark": "#22303C"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "35a5a364",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "d5410a86",
+                  "fields": [
+                    {
+                      "name": "sum(max_tax_withheld)",
+                      "expression": "SUM(`max_tax_withheld`)"
+                    },
+                    {
+                      "name": "Local_type",
+                      "expression": "`Local_type`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "funnel",
+              "encodings": {
+                "x": {
+                  "fieldName": "sum(max_tax_withheld)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "Local_type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Taxes per local"
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "dark": "#22303C"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 4,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "4e04176c",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Payroll Analysis Northern Lights Book"
+              ]
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "dark": "#0C2538"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "64a2a1f5",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "d5410a86",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "count(*)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Number of pay year"
+                },
+                "label": {
+                  "show": true
+                }
+              },
+              "mark": {
+                "colors": [
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 2
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 3
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 4
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 5
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 6
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 7
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 8
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 9
+                  },
+                  {
+                    "themeColorType": "visualizationColors",
+                    "position": 10
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Number of Payroll per year"
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "dark": "#22303C"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 10,
+            "width": 3,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "8a537060",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "d5410a86",
+                  "fields": [
+                    {
+                      "name": "max_tax_withheld",
+                      "expression": "`max_tax_withheld`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "max_tax_withheld"
+                }
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Tax withheld",
+                "headerAlignment": "left"
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "dark": "#22303C"
+              },
+              "widgetBorderColor": {
+                "dark": "#0F2434"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "c4e14639",
+            "queries": [
+              {
+                "name": "dashboards/01f0d6fad3771d2d8ed1d39da3cfe08d/datasets/01f0d6fbf48a1f76b9737d7a1d500e33_pay_year",
+                "query": {
+                  "datasetName": "d5410a86",
+                  "fields": [
+                    {
+                      "name": "pay_year",
+                      "expression": "`pay_year`"
+                    },
+                    {
+                      "name": "pay_year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "pay_year",
+                    "queryName": "dashboards/01f0d6fad3771d2d8ed1d39da3cfe08d/datasets/01f0d6fbf48a1f76b9737d7a1d500e33_pay_year"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Year"
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "dark": "#22303C"
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 1,
+            "width": 2,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "c532be56",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "d5410a86",
+                  "fields": [
+                    {
+                      "name": "pay_year",
+                      "expression": "`pay_year`"
+                    },
+                    {
+                      "name": "conteo",
+                      "expression": "`conteo`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "pay_year",
+                    "numberFormat": "0",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "integer",
+                    "displayAs": "number",
+                    "visible": true,
+                    "order": 100000,
+                    "title": "pay_year",
+                    "allowSearch": false,
+                    "alignContent": "right",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false
+                  },
+                  {
+                    "fieldName": "conteo",
+                    "numberFormat": "0",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "integer",
+                    "displayAs": "number",
+                    "visible": true,
+                    "order": 100001,
+                    "title": "conteo",
+                    "allowSearch": false,
+                    "alignContent": "right",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false
+                  }
+                ]
+              },
+              "invisibleColumns": [
+                {
+                  "numberFormat": "0.00",
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "imageHeight": "",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkOpenInNewTab": true,
+                  "name": "max_tax_withheld",
+                  "type": "float",
+                  "displayAs": "number",
+                  "order": 100002,
+                  "title": "max_tax_withheld",
+                  "allowSearch": false,
+                  "alignContent": "right",
+                  "allowHTML": false,
+                  "highlightLinks": false,
+                  "useMonospaceFont": false,
+                  "preserveWhitespace": false
+                },
+                {
+                  "numberFormat": "0.00",
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "imageHeight": "",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkOpenInNewTab": true,
+                  "name": "min_benefits",
+                  "type": "float",
+                  "displayAs": "number",
+                  "order": 100003,
+                  "title": "min_benefits",
+                  "allowSearch": false,
+                  "alignContent": "right",
+                  "allowHTML": false,
+                  "highlightLinks": false,
+                  "useMonospaceFont": false,
+                  "preserveWhitespace": false
+                },
+                {
+                  "numberFormat": "0.00",
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "imageHeight": "",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkOpenInNewTab": true,
+                  "name": "hourly_rate",
+                  "type": "float",
+                  "displayAs": "number",
+                  "order": 100004,
+                  "title": "hourly_rate",
+                  "allowSearch": false,
+                  "alignContent": "right",
+                  "allowHTML": false,
+                  "highlightLinks": false,
+                  "useMonospaceFont": false,
+                  "preserveWhitespace": false
+                },
+                {
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "imageHeight": "",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkOpenInNewTab": true,
+                  "name": "Local_type",
+                  "type": "string",
+                  "displayAs": "string",
+                  "order": 100005,
+                  "title": "Local_type",
+                  "allowSearch": false,
+                  "alignContent": "left",
+                  "allowHTML": false,
+                  "highlightLinks": false,
+                  "useMonospaceFont": false,
+                  "preserveWhitespace": false
+                }
+              ],
+              "allowHTMLByDefault": false,
+              "itemsPerPage": 25,
+              "paginationSize": "default",
+              "condensed": true,
+              "withRowNumber": false,
+              "frame": {
+                "showTitle": true,
+                "title": "Per period"
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "dark": "#22303C"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 2,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "c6fc64a3",
+            "queries": [
+              {
+                "name": "dashboards/01f0d6fad3771d2d8ed1d39da3cfe08d/datasets/01f0d6fbf48a1f76b9737d7a1d500e33_Local_type",
+                "query": {
+                  "datasetName": "d5410a86",
+                  "fields": [
+                    {
+                      "name": "Local_type",
+                      "expression": "`Local_type`"
+                    },
+                    {
+                      "name": "Local_type_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "Local_type",
+                    "queryName": "dashboards/01f0d6fad3771d2d8ed1d39da3cfe08d/datasets/01f0d6fbf48a1f76b9737d7a1d500e33_Local_type"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Local"
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "dark": "#22303C"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 1,
+            "width": 2,
+            "height": 1
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "name": "c58377a7",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "f3767d26",
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {},
+              "frame": {
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "genieSpace": {
+      "isEnabled": true,
+      "enablementMode": "ENABLED"
+    },
+    "applyModeEnabled": false
+  }
+}
